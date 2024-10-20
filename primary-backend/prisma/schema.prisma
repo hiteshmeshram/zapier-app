@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String @id @default(uuid())
+  name      String? 
+  email     String @unique
+  password  String
+  zap       Zap[]
+}
+
+model Zap {
+  id        String @id @default(uuid())
+  userId    String @unique
+  user      User @relation(fields: [userId],references: [id])
+  trigger   Trigger?
+  actions   Action[]
+  zaprun    Zaprun[]
+}
+
+model Trigger {
+  id                    String @id @default(uuid())
+  name                  String
+  availableTriggerId    String
+  metadata              Json @default("{}")
+  zapId                 String @unique
+  zap                   Zap @relation(fields: [zapId],references: [id])
+  type                  AvailableTrigger @relation(fields: [availableTriggerId],references: [id])
+}
+
+model AvailableTrigger {
+  id        String @id @default(uuid())
+  name      String
+  image     String
+  Trigger   Trigger[]
+}
+
+model Action {
+  id                  String @id @default(uuid())
+  name                String
+  availableActionId   String
+  metadata            Json @default("{}")
+  zapId               String
+  zap                 Zap @relation(fields: [zapId],references: [id])
+  type                 AvailableAction @relation(fields: [availableActionId],references: [id])
+
+}
+
+model AvailableAction {
+  id       String @id @default(uuid())
+  name     String
+  image    String
+  Action   Action[]
+
+
+}
+
+model Zaprun {
+  id              String @id @default(uuid())
+  zapId           String
+  zap             Zap @relation(fields: [zapId],references: [id])
+  zaprunoutbox    Zaprunoutbox?
+}
+
+model  Zaprunoutbox {
+  id        String @id @default(uuid())
+  zaprunId  String @unique
+  zaprun    Zaprun @relation(fields: [zaprunId],references: [id])
+}
