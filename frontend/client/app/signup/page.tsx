@@ -65,6 +65,7 @@ export default function () {
                                     name,
                                     password
                                 })
+                                alert(res.data.message)
                                 router.push('/login');
                             }}>Get started for free</button>
                     </div>
