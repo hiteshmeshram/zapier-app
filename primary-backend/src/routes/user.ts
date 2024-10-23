@@ -5,8 +5,11 @@ import jwt from'jsonwebtoken'
 import { JWT_SECRET } from '../config';
 import bcrypt from 'bcrypt'
 import { authMiddleware } from '../middleware';
+import { sendEmail } from '../sendEmail';
 
 const router = Router();
+
+const storedOtps: Map<string,number> = new Map();
 
 router.post('/signup',async (req,res)=>{
     const { name, username, password } = req.body;
@@ -102,11 +105,41 @@ router.get('/',authMiddleware, async (req,res)=>{
         res.json({user});
 
     } catch(e) {
-        console.log(e);
+        console.error(e);
         res.status(403).json({
             message: "user not found"
         })
     }
+})
+
+//@ts-ignore
+router.get('/otp',async (req,res)=>{
+    const email = req.body.email;
+    const otp = 1000+ Math.floor(Math.random()*9999);
+
+    storedOtps.set(email,otp)
+
+    //here send email to this userEmail with this otp and store it in inMemory varibale
+    const result = await sendEmail(email,otp);
+    res.json({
+        message: `otp ${otp}`
+    })
+})
+
+router.post('/otpvalidate',(req,res)=>{
+    const {otp ,email } = req.body;
+
+    const validOtp = storedOtps.get(email);
+    if (validOtp) {
+        res.json({
+            message: 'validation successful'
+        })
+
+    }
+
+    res.status(404).json({
+        message: 'invalid otp'
+    })
 })
 
 export default router;
