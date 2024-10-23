@@ -6,13 +6,14 @@ import { SecondaryButton } from "@/components/SecondaryButton";
 import { BASE_URL } from "@/config";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 
 export default function () {
     const [ name,setName ] = useState("")
     const [ email,setEmail ] = useState("")
     const [ password,setPassword ] = useState("")
+    const [ismodelOpen,setIsmodelOpen ] = useState(false);
 
     const router = useRouter();
 
@@ -38,7 +39,7 @@ export default function () {
                         <div className="ml-2">14-day trial of premium features & apps</div>
                     </div>
                 </div>
-                <div className="border border-black rounded-md shadow-md mt-24">
+                <div className={`border border-black rounded-md shadow-md mt-24 relative ${ismodelOpen} ? blur-3xl: blur-none`}>
                     <div className="m-4 border-b border-gray-400 py-4">
                         <button className="w-full bg-blue-500 text-white py-3 rounded-md  ">sign in with Google</button>
                     </div>
@@ -57,16 +58,17 @@ export default function () {
 
                     </div>
                     <div className=" mx-4">
+                        {ismodelOpen &&  <div className="absolute top-24 left-16"><OtpComponent email={email} name={name}  password={password} isOpen={(value)=>setIsmodelOpen(value)}/></div>}
                         <button 
-                            className="w-full bg-orange-500 py-3 text-white  font-semibold rounded-full"
+                            className="w-full bg-orange-500 py-3 text-white  font-semibold rounded-full "
                             onClick={async ()=>{
-                               const res = await  axios.post(`${BASE_URL}/api/v1/user/signup`,{
-                                    username: email,
-                                    name,
-                                    password
-                                })
-                                alert(res.data.message)
-                                router.push('/login');
+                                console.log('hit');
+                                //model  should open for otp 
+                                if (!email && !password && !name) {
+                                    return;
+                                }
+                                setIsmodelOpen(true);
+
                             }}>Get started for free</button>
                     </div>
                     <div className="mx-4 my-6 text-gray-500">
@@ -86,4 +88,66 @@ function TickSvg() {
         </svg>
 
     </div>
+}
+
+function OtpComponent({email,name,password , isOpen}: {
+    email: string,
+    name: string,
+    password: string,
+    isOpen: (value: boolean)=>void
+}) {
+    const router = useRouter();
+    const [otp,setOtp ] = useState(0)
+
+    useEffect(()=>{
+        const response =  axios.post(`${BASE_URL}/api/v1/user/otp`,{
+            email
+        })
+    },[])
+
+    return <div id="static-modal" data-modal-backdrop="static"  className=" z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div className="relative p-4 w-full max-w-2xl max-h-full">
+    
+        <div className="relative bg-white rounded-lg shadow ">
+            
+            <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t ">
+                <h3 className="text-xl font-semibold text-gray-900 flex justify-center">
+                    Enter your Otp
+                </h3>
+                
+            </div>
+           
+            <div className="p-4 md:p-5 space-y-4 w-full">
+                <input onChange={(e)=>{
+                    setOtp(Number(e.target.value))
+                }} type='number' placeholder="enter otp " className="px-4 py-2 border w-full"></input>
+            </div>
+            <div className="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600 justify-center">
+                <button onClick={async ()=>{
+                    const firstResponse = await axios.post(`${BASE_URL}/api/v1/user/otpvalidate`,{
+                        email: email,
+                        otp: otp
+                    })
+                    if (firstResponse.status!==200) {
+                        alert("invalid otp");
+                        return;
+                    }
+
+                    if (firstResponse.status === 200) {
+                        const res = await  axios.post(`${BASE_URL}/api/v1/user/signup`,{
+                            username: email,
+                            name,
+                            password
+                        })
+                        router.push('/login');
+                    }
+                        
+                }} data-modal-hide="static-modal" type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+               <button 
+                    onClick={()=>isOpen(false)}
+                    className="text-white ml-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"> close</button>
+            </div>
+        </div>
+    </div>
+</div>
 }
